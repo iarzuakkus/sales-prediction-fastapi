@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: northwind-ml-app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_HOST=postgres  # Docker içinde host adı olarak postgres kullanılmalı
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/app
+    restart: always
+
+  postgres:
+    image: postgres:13
+    container_name: northwind-postgres
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./northwind_data/northwind.sql:/docker-entrypoint-initdb.d/northwind.sql
+    restart: always
+
+volumes:
+  postgres_data:
