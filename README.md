@@ -318,7 +318,7 @@ Request Body:
 }
 
 {
-  "prediction": integer  // Tahmin edilen miktar
+  "prediction": float  // Tahmin edilen miktar
 }
 
 

@@ -1,93 +1,67 @@
 #**FastAPI**  ile temel yapı kurulumu Aşağıdaki uç noktaların oluşturulması:
 
-from fastapi import FastAPI, HTTPException, Body
+#python -m uvicorn fast_api:app --reload
+#http://localhost:8000/docs
+#http://localhost:8000/redoc
+
+
+from fastapi import FastAPI
 from pydantic import BaseModel
 import pandas as pd
 import joblib
+import psycopg2
 from database_definition import prepare_segmented_dataframe
 from database_connect import get_data_from_db
-from main_model import build_feature_vector, model_predict
-import numpy as np
-from main_model import model_predict  # model_predict fonksiyonunu kullanıyoruz
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-import numpy as np
+from main_model import build_feature_vector, model_predict, train_and_save_model
 
-
-
-model = joblib.load("model.pkl") #eğitilmiş model
-scaler = joblib.load("scaler.pkl")
-
-df = prepare_segmented_dataframe() #veri seti
-
-app = FastAPI(title="Sales Predict Api", 
-              description="Northwind DB sales quantity predict API's")
-
-
-
+# Başlangıçta verileri hazırla
+df = prepare_segmented_dataframe()
 orders_df, order_details_df, products_df, customers_df, categories_df = get_data_from_db()
 
-#/products	 GET	Ürün listesini döner
+app = FastAPI(
+    title="Sales Predict API",
+    description="Northwind DB satış miktarı tahmin servisi"
+)
 
+# /products endpoint
 @app.get("/products")
 def get_products():
-    return products_df.to_dict(orient="records") #dataframei json uyumlu yapar.
+    return products_df.to_dict(orient="records")
 
-
-
-#/sales_summary	GET 	Satış özet verisini döner
-
+# /sales_summary endpoint
 @app.get("/sales_summary")
 def sales_summary():
-    summary = df.groupby('product_id')['quantity'].sum().reset_index()
-    summary = summary.rename(columns={'quantity': 'total_quantity'})
+    df["total"] = df["quantity"] * df["unit_price"] * (1 - df["discount"])
+    summary = df.groupby("product_id")["total"].sum().reset_index()
+    summary = summary.rename(columns={"total": "total_spent"})
     return summary.to_dict(orient="records")
 
-
-
-#/predict	POST	Tahmin yapılmasını sağlar
-
+# Tahmin için istek modeli
 class PredictRequest(BaseModel):
     product_id: int
     customer_id: str
     order_date: str
-    units_in_stock: int
-    reorder_level: int
 
+# /predict endpoint
 @app.post("/predict")
 def predict(request: PredictRequest):
-    prediction = model_predict(
-        product_id=request.product_id,
-        customer_id=request.customer_id,
-        order_date=request.order_date,
-        units_in_stock=request.units_in_stock,
-        reorder_level=request.reorder_level
-    )
+    if request.product_id not in df['product_id'].values:
+        return {"error": f"Geçersiz ürün ID: {request.product_id}"}
+    if request.customer_id not in df['customer_id'].values:
+        return {"error": f"Geçersiz müşteri ID: {request.customer_id}"}
+    try:
+        pd.to_datetime(request.order_date, dayfirst=True)
+    except:
+        return {"error": "Geçersiz tarih formatı. Lütfen GG/AA/YYYY formatında girin."}
+
+    prediction = model_predict(...)
     return {"prediction": prediction}
 
-
-
-#/retrain	POST	Modeli tekrar eğitir
-
+# /retrain endpoint
 @app.post("/retrain")
 def retrain():
-    features = [
-        'unit_price', 'discount', 'customer_segment',
-        'monthly_segment', 'product_segment', 'stock_reorder_interaction'
-    ]
-
-    X = df[features]
-    y = np.log1p(df['quantity'])
-
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    model = LinearRegression()
-    model.fit(X_scaled, y)
-
-    joblib.dump(model, "model.pkl")
-    joblib.dump(scaler, "scaler.pkl")
-
-    return {"message": "Model tekrar eğitildi."}
+    df = prepare_segmented_dataframe()
+    train_and_save_model(df)
+    return {"message": "Model başarıyla tekrar eğitildi."}
 
 

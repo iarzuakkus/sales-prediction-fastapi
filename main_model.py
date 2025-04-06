@@ -8,37 +8,35 @@ from sklearn.linear_model import LinearRegression
 from database_definition import prepare_segmented_dataframe
 from eda_utils import apply_log_transform
 
-# 1. Veriyi hazirla
-df = prepare_segmented_dataframe()
 
-# 2. Log donusum uygula (aykiri temizleme yapilmiyor)
-df = apply_log_transform(df, 'quantity', 'quantity_log')
+# Model eğitimi ve kaydı
+def train_and_save_model(df, model_path="model.pkl"):
+    feature_cols = [
+    'monthly_segment','product_segment','product_mean_spent', 'customer_segment',
+    'stock_reorder_interaction','category_rank', 'has_discount'
+    ]
+    X = df[feature_cols]
+    y = df['total_spent']
 
-# 3. Ozellikler ve hedef
-feature_cols = [
-    'unit_price', 'discount', 'customer_segment', 
-    'monthly_segment','product_segment',
-    'stock_reorder_interaction'
-]
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
 
-X = df[feature_cols].copy()
-y = df['quantity_log']
+    model = LinearRegression()
+    model.fit(X_scaled, y)
 
-# 4. Scale et
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+    joblib.dump(model, model_path)
+    joblib.dump(scaler, "scaler.pkl")  # Tahmin fonksiyonunda kullanılacak
 
-# 6. Modeli kur ve egit
-model = LinearRegression()
-model.fit(X_scaled, y)
+    return model, scaler
 
-# 8. Model ve scaler kaydet
-joblib.dump(model, "model.pkl")
-joblib.dump(scaler, "scaler.pkl")
 
-# 9. Tahmin icin gerekli feature vektoru olusturma fonksiyonu
-def build_feature_vector(df, product_id, customer_id, order_date, units_in_stock, reorder_level):
-    order_month = pd.to_datetime(order_date).month
+# Özellik vektörü oluşturma
+def build_feature_vector(df, product_id, customer_id, order_date):
+    try:
+        parsed_date = pd.to_datetime(order_date, dayfirst=True, errors='coerce')
+        order_month = parsed_date.month if not pd.isna(parsed_date) else None
+    except:
+        order_month = None
 
     try:
         product_segment = df[df['product_id'] == product_id]['product_segment'].mode()[0]
@@ -51,37 +49,80 @@ def build_feature_vector(df, product_id, customer_id, order_date, units_in_stock
         customer_segment = 1
 
     try:
-        monthly_segment = df[df['order_month_num'] == order_month]['monthly_segment'].mode()[0]
-    except IndexError:
+        if order_month is not None:
+            segment_mode = df[df['order_month_num'] == order_month]['monthly_segment'].mode()
+            monthly_segment = segment_mode.iloc[0] if not segment_mode.empty else 1
+        else:
+            monthly_segment = 1
+    except:
         monthly_segment = 1
 
     try:
-        unit_price = df[df['product_id'] == product_id]['unit_price'].mode()[0]
+        product_mean_spent = df[df['product_id'] == product_id]['product_mean_spent'].mean()
+        if np.isnan(product_mean_spent):
+            product_mean_spent = 0
     except:
-        unit_price = 0
+        product_mean_spent = 0
 
     try:
+        category_rank = df[df['product_id'] == product_id]['category_rank'].mode()[0]
+    except:
+        category_rank = 1
+
+    try:
+        units_in_stock = df[df['product_id'] == product_id]['units_in_stock'].mode()[0]
+    except:
+        units_in_stock = 0
+    try:
+        reorder_level = df[df['product_id'] == product_id]['reorder_level'].mode()[0]
+    except:
+        reorder_level = 0
+    
+    try:
         discount = df[df['product_id'] == product_id]['discount'].mode()[0]
+        has_discount = 1 if discount > 0 else 0
     except:
         discount = 0
+        has_discount = 0
 
     stock_reorder_interaction = units_in_stock * reorder_level
 
     features = {
-        'unit_price': unit_price,
-        'discount': discount,
-        'customer_segment': customer_segment,
         'monthly_segment': monthly_segment,
         'product_segment': product_segment,
-        'stock_reorder_interaction': stock_reorder_interaction
+        'product_mean_spent': product_mean_spent,
+        'customer_segment' : customer_segment,
+        'stock_reorder_interaction': stock_reorder_interaction,
+        'category_rank': category_rank,
+        'has_discount': has_discount
     }
 
     return pd.DataFrame([features])
 
-# 10. Tahmin fonksiyonu
 
-def model_predict(product_id, customer_id, order_date, units_in_stock, reorder_level):
-    input_df = build_feature_vector(df, product_id, customer_id, order_date, units_in_stock, reorder_level)
+# Tahmin fonksiyonu
+def model_predict(df, product_id, customer_id, order_date):
+    input_df = build_feature_vector(df, product_id, customer_id, order_date)
+    scaler = joblib.load("scaler.pkl")
+    model = joblib.load("model.pkl")
     input_scaled = scaler.transform(input_df)
-    log_pred = model.predict(input_scaled)
-    return int(round(np.expm1(log_pred[0])))
+    prediction = model.predict(input_scaled)
+
+    return prediction
+
+
+# Ana çalışma bloğu
+if __name__ == "__main__":
+    # Veriyi hazırla
+    df = prepare_segmented_dataframe()
+
+    # Modeli eğit ve kaydet
+    model, scaler = train_and_save_model(df)
+
+    # Örnek tahmin
+    example_product = 8
+    example_customer = 'ALFKI'
+    example_date = '15/03/1997'
+
+    prediction = model_predict(df, example_product, example_customer, example_date)
+    print(f"Tahmin edilen miktar: {prediction}")
