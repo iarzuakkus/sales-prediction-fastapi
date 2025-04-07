@@ -24,25 +24,25 @@ Sunum Linki: https://www.canva.com/design/DAGjH_NoQjk/ujpHQ_SLg-opD1AighsxRA/edi
 gibi adımlar gerçekleştirilmiştir.
 
 ## Dosya Yapısı
-.
-├── machine_learning/                # Makine öğrenmesi modelleri
-│   ├── decision_tree.py             # Karar ağacı modeli implementasyonu
-│   ├── linear_regression.py         # Linear regresyon modeli implementasyonu
-│   ├── random_forest.py             # Random forest modeli implementasyonu
-│   └── model_comparison.py          # Model karşılaştırması
-├── northwind_data/                  # Northwind veri seti ve ilgili dosyalar
-├── .env                             # Ortam değişkenleri (gitignore'da)
-├── .gitignore                       # Git tarafından izlenmeyecek dosyaların listesi
-├── database_connect.py              # Veritabanı bağlantı işlemleri
-├── database_definition.py           # Veritabanı şema, veri hazırlama ve özellik mühendisliği
-├── Dockerfile                       # Docker konteyner yapılandırması
-├── docker-compose.yml               # Docker Compose konfigürasyonu
-├── eda_utils.py                     # Keşifsel veri analizi için yardımcı fonksiyonlar
-├── fast_api.py                      # FastAPI ile oluşturulmuş API servisleri
-├── main_model.py                    # Ana model entegrasyonu (Linear Regression)
-├── model.pkl                        # Eğitilmiş model dosyası
-├── requirements.txt                 # Proje bağımlılıkları
-└── scaler.pkl                       # Veri normalizasyonu için ölçeklendirici
+    .
+    ├── machine_learning/                # Makine öğrenmesi modelleri
+    │   ├── decision_tree.py             # Karar ağacı modeli implementasyonu
+    │   ├── linear_regression.py         # Linear regresyon modeli implementasyonu
+    │   ├── random_forest.py             # Random forest modeli implementasyonu
+    │   └── model_comparison.py          # Model karşılaştırması
+    ├── northwind_data/                  # Northwind veri seti ve ilgili dosyalar
+    ├── .env                             # Ortam değişkenleri (gitignore'da)
+    ├── .gitignore                       # Git tarafından izlenmeyecek dosyaların listesi
+    ├── database_connect.py              # Veritabanı bağlantı işlemleri
+    ├── database_definition.py           # Veritabanı şema, veri hazırlama ve özellik mühendisliği
+    ├── Dockerfile                       # Docker konteyner yapılandırması
+    ├── docker-compose.yml               # Docker Compose konfigürasyonu
+    ├── eda_utils.py                     # Keşifsel veri analizi için yardımcı fonksiyonlar
+    ├── fast_api.py                      # FastAPI ile oluşturulmuş API servisleri
+    ├── main_model.py                    # Ana model entegrasyonu (Linear Regression)
+    ├── model.pkl                        # Eğitilmiş model dosyası
+    ├── requirements.txt                 # Proje bağımlılıkları
+    └── scaler.pkl                       # Veri normalizasyonu için ölçeklendirici
 
 
 ## Temel Gereksinimler
@@ -250,7 +250,7 @@ Not: Docker Compose kullanırken veritabanı adresini localhost yerine container
 API'nin Swagger arayüzü, tüm endpointleri ve kullanımlarını dökümante eder. Uygulamayı çalıştırdıktan sonra tarayıcınızdan http://localhost:8000/docs adresine giderek bu arayüze erişebilirsiniz.
 
 ![Swagger UI](assets/swagger_docs.png)
-![Swagger UI](assets/swagger-redoc.png)
+![Swagger UI](assets/swagger_redoc.png)
 
 
 
