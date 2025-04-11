@@ -54,7 +54,7 @@ def predict(request: PredictRequest):
     except:
         return {"error": "Geçersiz tarih formatı. Lütfen GG/AA/YYYY formatında girin."}
 
-    prediction = model_predict(...)
+    prediction = model_predict(df, request.product_id, request.customer_id, request.order_date).tolist()
     return {"prediction": prediction}
 
 # /retrain endpoint
