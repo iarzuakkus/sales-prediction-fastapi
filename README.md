@@ -157,8 +157,8 @@ Projeyi çalıştırmak için aşağıdaki gereksinimlere ihtiyacınız vardır:
 
 1. Repository’yi klonla:
    ```bash
-   git clone https://github.com/kullaniciAdi/northwind-sales-api.git
-   cd northwind-sales-api
+   git clone https://github.com/artfuturx/sales-prediction-fastapi.git
+   cd sales-prediction-fastapi
 
 
 ## 1.requirements.txt dosyasındaki bağımlılıkları yükleyin
